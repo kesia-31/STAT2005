@@ -20,6 +20,8 @@ Rithika Suresh Kumar - 22931108
 Kesia James - 20944201
 :::
 
+![](queue-info.jpg)
+
 ## Introduction and Background
 
 ### Problem context
