@@ -1,0 +1,1389 @@
+---
+title: "Modelling a Hospital Queuing System - STAT2005 Project"
+format:
+  html:
+    embed-resources: true
+editor: visual
+toc: true
+number-sections: true
+project:
+  output-dir: docs
+---
+
+::: {.callout-note appearance="minimal" icon="false"}
+**Contributers:**
+
+Harshitha Bhupathiraju - 21478222
+
+Rithika Suresh Kumar - 22931108
+
+Kesia James - 20944201
+:::
+
+## Introduction and Background
+
+### Problem context
+
+Healthcare systems rely on appointment-based scheduling systems to manage patient demand and allocate limited medical resources efficiently. Ensuring smooth patient flow and optimising the use of medical resources is critical to maintain high quality care and patient satisfaction.
+
+However, operational challenges such as long patient waiting times, and limited staff can reduce clinic efficiency and hinder timely access to healthcare services. While missed appointments lead to poor utilisation of resources, not having sufficient staff can result in excessive waiting times. 
+
+Long waiting times are a significant operational issue. Excessive delays can negatively impact patient satisfaction, increase stress for both patients and staff, and can reduce the overall quality of care, particularly in high-demand clinics where appointment slots are limited. (Khaled Falah Alrasheedit et al., 2019). Waiting times are often influenced by factors such as appointment scheduling and clinic workload, and can also be exacerbated by occasional missed scheduled appointments, commonly referred to as no-shows. Research (Leila F. Dantas et al., 2018) reports that the average ‘no-show’ rate is around 23%, across all medical specialties. Scheduling inefficiencies create a cycle of delay that is difficult to manage. Therefore, no-show behaviour is an important factor to consider when analysing patient flow, as it directly affects resource utilisation and waiting times.
+
+Limited staff availability further strains a clinic’s ability to manage these operational challenges. When clinics operate with fewer healthcare professionals than required, appointment delays and waiting times increase. Staff shortages not only reduce the clinic’s ability to respond to patient demand, but also limits the flexibility needed to manage no-shows effectively, therefore impacting both operational efficiency and patient satisfaction.
+
+### Objectives
+
+For this project, the dataset intended to be used is the ‘Medical Appointment Scheduling System’ data sourced from Kaggle (María Carolina Gonzalez Galtier, 2025).  It contains approximately 111,000 synthetic records, where each row represents a scheduled appointment. The dataset contains information relating to appointment date and timing, waiting time, and whether the patient attended the appointment or not.
+
+Our aim is to investigate how the number of doctors present at the clinic affects patient waiting times and hence calculate the minimum number of doctors needed at the clinic to maintain the average waiting time under 30 minutes.
+
+Specifically, this study seeks to quantify the relationship between staffing levels and waiting times, to allow for optimal doctor allocation.
+
+### Significance
+
+By investigating the number of doctors present at a clinic, we can help healthcare providers improve clinic performance and service. This could include adjusting staff allocation based on patient demand and scheduling to minimise queues and congestion during peak periods.
+
+Reducing wait times can contribute to a better experience for the patient and also make the work environment easier for staff by reducing pressure and helping the clinic run more smoothly throughout the day. If healthcare providers can understand the general patterns revolving workflow issues, more informed scheduling decisions can be made, hence better utilising available resources. This can therefore improve operational efficiency, reduce wait times, and enhance patient satisfaction.
+
+Overall, this study uses data to help improve how clinics operate. It supports better decision making regarding staffing and appointment scheduling, which can therefore lead to shorter waiting times, more efficient use of resources, and improved quality of care for all patients.
+
+### Literature review
+
+Previous research has consistently shown operational efficiencies as a key challenge in healthcare systems. Studies such as Alrasheedit et al. (2019) demonstrate that prolonged waiting times are strongly associated with reduced patient satisfaction and the perceived quality of care. Similarly, Dantas et al. (2018) highlights the impact of patient no-shows on scheduling efficiency and the use of resources across medical specialties. Gonzalez (2025) further highlights how missed appointments lead to a substantial waste of medical resources, such as healthcare staff time, facilities, and operational costs. Thus emphasising the importance of including no-show behaviour in any realistic simulation modelling a health clinic. Research on outpatient scheduling further highlights the importance of balancing patient demand with available capacity to minimise delays (Gupta & Denton, 2008).
+
+Moreover, Parim (2024) emphasises that a lack of healthcare staff results in increased patient waiting times. Parim (2024) also emphasises how insufficient staffing is associated with more errors, patient complications and a general reduction in the quality of care that can be delivered to the client. Thus, this proves the importance of having enough doctors to have waiting times within an acceptable balance of patients receiving maximum care and utilisation of appointments.
+
+While existing literature has acknowledged that scheduling practices and patient behaviour affects clinical performance, there are fewer studies focusing on determining the most optimal staffing levels. In particular, there is scope for further research that links staffing directly to acceptable waiting times.
+
+## Methodology
+
+### Model Formulation
+
+This project models the healthcare appointment system by using a queuing simulation approach. Initially, a G/G/1 queue is developed to represent a single doctor system, which is then extended to a G/G/c model to simulate multiple doctors within the clinic.
+
+Queuing theory models a system that changes in accordance to a sequence of events. Within the context of the hospital settings, these events are:
+
+1.  The arrival of patients
+2.  How patients are seen
+3.  The number of servers
+
+::: {.callout-important icon="false"}
+A G/G/1 queue is characterised by:
+
+- Inter-arrival times: $T_a$ which follows a general distribution
+
+- Service times: $T_s$ which follows a general distribution
+
+- Number of servers: $c = 1$
+
+To extend this to a G/G/c model, the number of servers should be $c > 1$
+:::
+
+Patient arrivals are modelled using inter-arrival times calculated from the difference between two sequential patients’ check-in times. These inter-arrival times are assumed to follow a fitted probability distribution (such as Log-Normal or Exponential).
+
+Within the model, each arrival will be calculated as:
+
+$$T_i = T_{i-1} + T_{a}^{(i)}, \quad i = 1, 2, \ldots, n$$
+
+Where $T_i$ is the arrival time of the i-th patient, calculated as $T_a^{(i)}$ (a randomly sampled inter-arrival time) added to the arrival time of the previous patient ($T_{i-1}$).
+
+Service times $\{T_s^{(1)}, T_s^{(2)}, \ldots, T_s^{(n)}\}$ are defined as the duration of each appointment and are also modelled using an appropriate fitted distribution based on the dataset.
+
+The model assumes that only patients who attend their appointments contribute to the queue, with no-show behaviour incorporated by assigning each patient a probability of attendance. Only patients who attend their appointments contribute to the queue, while patients who do not attend or cancel their appointment are treated as no-shows and are removed from the system.
+
+This will be achieved by bernoulli sampling where:
+
+$$Attendance = \begin{cases} 1 & : p \\ 0 & : 1-p \end{cases}$$
+
+where p = 0.772 (the empirically estimated attendance probability)
+
+Calculating the strength of the model can be done through numerous metrics. Most notably, the **utilisation ratio** $(\rho)$, calculated as:
+
+$$\rho = \frac{\lambda}{c\mu}$$
+
+Where $\lambda$ is the arrival rate and $\mu$ is the service rate. If $\rho$ \< 1, this indicates a stable process wherein the system will not grow indenifinitely as patients are treated at a faster rate than they arrive.
+
+To calculate the theoretical metrics of our G/G/1 queuing model, the **Kingman Approximation** returns an approximation of waiting times based on the utilisation and variance of the queue.
+
+$$E(W) = \frac{\rho}{(1-\rho)} \times (\frac{C^2_a + C^2_s}{2}) \times E[T_s] $$
+
+Due to the nature of the waiting times and inter-arrival times following non-exponential distributions, this approximation will compute more realistic baseline measures to compare the simulation's performance to. This approximation can then be used to calculate other informative metrics, such as **Response Time (**$W$), **Waiting Time (**$W_q$), **Average number of patients in the queue** **(**$L_q$), **Average number of patients in the system** **(**$L$) and **The proportion of time the system is empty** **(**$P_0$).
+
+Assumptions for model implementation:
+
+- Patient arrivals are based on inter-arrival times calculated from consecutive patients’ check-in times, allowing for variability in arrival patterns, including peak periods.
+
+- Inter-arrival times follow a fitted probability distribution to reflect the randomness observed in real patient arrival times.
+
+- Service time is defined as the appointment duration, and varies between patients, meaning not all appointments take the same amount of time.
+
+- Each doctor can treat only one patient at a time.
+
+- Patients who attend join a single queue and are served in order of arrival (first-come, first-served).
+
+- Each patient has a probability of attendance, and patients who do not attend or cancel their appointment are treated as no-shows and removed from the system, meaning they do not join the queue or require service.
+
+- Queue capacity is assumed to be unlimited (no patients are turned away)
+
+- All doctors are assumed to have the same service capability
+
+::: {.callout-note appearance="simple"}
+### Model Types:
+
+1.  **G/G/1 Model** - To understand how patient arrival rates affect waiting times
+
+2.  **G/G/c Model** - To analyse how increasing doctors reduces waiting times
+:::
+
+### Description of data
+
+The data-set to be used for this queuing model is the ‘Medical Appointment Scheduling System’ data-set sourced from Kaggle. This data-set contains synthetic records related to the healthcare appointment system with 111488 observations. Due to the data-set being synthetically generated, no significant cleaning/handling of missing observations must occur.  
+
+```{r}
+#reading in the dataset
+appointments <- read.csv("appointments.csv")
+head(appointments, n=2)
+```
+
+However, the data will be condensed to **appointments_clean** which contains only the required variables of appointment_datetime, waiting_time, appointment_duration and status. 
+
+To extract the required information to develop the queuing model, inter-arrival times will be calculated by first combining appointment_date and check_in_time to then sort all appointments chronologically. To prevent ‘no-shows’ from impacting the distribution of waiting times and inter-arrival times, they will be filtered from the initial distribution fitting stage to develop accurate parameters, but the proportion of ‘no-shows’ will be calculated to later inform the queuing model.
+
+```{r}
+#| include: false
+
+library(dplyr)
+library(lubridate)
+#install.packages("lubridate")
+library(vtable)
+#install.packages("vtable")
+
+#prepare the dataset for development of modeling system. 
+appointments_clean <- appointments %>% 
+  mutate(appointment_datetime = ymd_hms(paste(appointment_date,check_in_time))) %>% 
+  filter(status == "attended") %>% 
+  arrange(appointment_datetime) %>% 
+  group_by(appointment_date) %>% 
+  mutate(inter_arrival = as.numeric(difftime(appointment_datetime,lag(appointment_datetime), units='mins'))) %>% 
+  ungroup() %>% 
+  dplyr::select(appointment_datetime, appointment_duration, inter_arrival, waiting_time, status)
+
+# extracting and cleaning variables for analysis
+inter_arrivals <- appointments_clean$inter_arrival %>% 
+  na.omit()
+
+appointment_duration <- appointments_clean$appointment_duration
+
+```
+
+To factor in the no-shows as part of the simulation, the 'no-show' rate should be calculated.
+
+```{r}
+
+# calculating no-show rate 
+no_shows <- appointments$status != 'attended'
+no_show_rate <- nrow(appointments[no_shows,]) / nrow(appointments)
+no_show_rate
+
+```
+
+Summary statistics for the cleaned dataset can be seen below.
+
+```{r}
+#| echo: false
+
+#summary statistics table 
+
+st(appointments_clean, title="Summary Statistics for the cleaned dataset", out = "kable")
+```
+
+### Justification of modelling choices
+
+\
+A queuing simulation approach has been chosen since healthcare appointment systems naturally operate as stochastic service systems, where the patient arrivals, waiting, and service occur at random. This makes the queuing theory an appropriate framework for analysing clinical performance.
+
+The G/G/1 and G/G/c models have been selected due to their flexibility in allowing general distributions for both inter-arrival and service times. This is important since real-world healthcare data will rarely follow an exact distribution, and instead will contain variability in both the arrival patterns and duration of the appointments.
+
+Inter-arrival times and service times have been selected as the primary modelling inputs as they directly impact the queuing dynamics including congestion, waiting times, and the use of resources. These variables are therefore essential for evaluating the impact of staffing level on clinical efficiency.
+
+A simulation-based approach is preferred over analytical queuing solutions because real healthcare systems will involve unpredictable behaviours including variable arrival rates and patient no-shows. Using simulation will allow for these events to be modelled instead of relying on a strict mathematical model.
+
+Distribution fitting will be used for both the inter-arrival times and service times to ensure that the model accurately reflects the dataset. This will improve the accuracy and validity of the simulation compared to assuming theoretical distributions. No-show patients are excluded from the distribution fitting to avoid bias in the estimation of arrival and service times.
+
+## Model Implementation and Results
+
+### Exploratory Data Analysis
+
+Exploratory data analysis is conducted to visually understand the important parameters of the dataset. Through information gleaned from the aid of generated plots, consequent distribution fitting was allowed to occur. 
+
+```{r}
+#| code-fold: true
+#| label: fig-charts
+#| fig-cap: "Plots for Explanatory Data Analysis"
+#| fig-subcap: 
+#|   - ""
+#|   - ""
+#|   - ""
+#|   - ""
+#| layout-ncol: 2
+#| lightbox: true
+
+library(ggplot2)
+
+# plotting appointment status
+appointments %>% ggplot(aes(x=status, fill=status)) + 
+  geom_bar() + 
+  labs(title="Distribution of Appointment Status",
+       subtitle='Bar Graph',
+       x='Status',
+       y='Count') + 
+  theme(plot.title = element_text(face="bold"),
+        axis.title = element_text(size = 80)) + 
+  scale_fill_brewer(palette="Reds") +
+  theme_minimal()
+
+# plotting appointment duration
+appointments_clean %>% ggplot(aes(x=appointment_duration)) + 
+  geom_histogram(fill="skyblue", bins=30) + 
+  labs(title="Distribution of Appointment Duration \n(Service Time)",
+       subtitle='Histogram',
+       x='Appointment Duration (mins)',
+       y='Count') + 
+  theme(plot.title = element_text(face="bold"),
+        axis.title = element_text(size = 80)) + 
+  theme_minimal()
+
+# plotting inter-arrival times
+ggplot(data.frame(inter_arrivals),aes(x=inter_arrivals)) + geom_histogram(fill="lavender", bins=30) +
+  labs(title="Distribution of Inter-Arrival Times)",
+       subtitle='Histogram',
+       x='Inter-Arrival Time (mins)',
+       y='Count') + 
+  theme(plot.title = element_text(face="bold"),
+        axis.title = element_text(size = 80)) + 
+  theme_minimal()
+
+# plotting waiting times
+appointments_clean %>% ggplot(aes(x=waiting_time)) + 
+  geom_histogram(fill="lightgreen", bins=30) +
+  labs(title="Distribution of Waiting Times",
+       subtitle='Histogram',
+       x='Waiting Time (mins)',
+       y='Count') + 
+  theme(plot.title = element_text(face="bold"),
+        axis.title = element_text(size = 80)) + 
+  theme_minimal()
+```
+
+@fig-charts-1 shows the distribution of appointment status in which the majority of appointments were attended, with approximately 85,000 completed appointments recorded in the dataset. A smaller proportion of appointments were cancelled or marked as “did not attend”, and very few appointments remained scheduled or unknown. Though this indicates that most of the patients contributed to the healthcare queueing system, the presence of cancellations and no-shows suggests that attendance behaviour must still be incorporated into the simulation model.
+
+@fig-charts-2 shows a histogram of appointment durations (service times) that displays a positively skewed distribution, with most of the appointments concentrated around shorter durations of approximately 8-10 minutes and fewer longer appointments extending into the right tail of the distribution. This indicates that service times are not constant and contain significant variability, which supports the use of a service-time distribution within the G/G/1 and G/G/c queueing models rather than assuming deterministic service times.
+
+@fig-charts-3 shows the distribution of inter-arrival times which also shows a strong right-skewness, with a peak around 12-13 minutes and a long right tail representing occasional larger gaps between patient arrivals. This suggests that patient arrivals occur irreguarly rather than at constant intervals, further justifying the use of general arrival distributions within the simulation model. The observed shape appeared consistent with distributions such as the Weibull or Log-Normal distribution, which are capable of modelling skewed non-negative data.
+
+Finally, @fig-charts-4 shows the distribution of waiting times as similarly positively skewed, with a high frequency of shorter waiting times and fewer extremely long waits. This behaviour is typical of congested queuing systems, where most patients experience moderate delays while a smaller number of patients experience substantially longer waiting times due to periods of increased queue congestion. The skewed nature of the waiting times indicates that average waiting time alone may not fully describe system performance, making additional measures such as maximum waiting times and queue lengths important for evaluating the healthcare system.
+
+### Distribution Fitting:
+
+Distribution Fitting can be done via the 'fitdistrplus' package available inside of R.
+
+**INTER-ARRIVAL TIMES:**
+
+```{r}
+#| echo: false
+#| output: false
+
+
+# distribution fitting
+library(fitdistrplus)
+
+```
+
+```{r}
+#| code-fold: true
+
+# remove NA and negative values
+inter_arrivals <- na.omit(appointments_clean$inter_arrival)
+inter_arrivals <- inter_arrivals[inter_arrivals > 0]
+
+# fitting possible distributions
+fit_exp_i <- fitdist(inter_arrivals, distr="exp")
+fit_lognorm_i <- fitdist(inter_arrivals, distr="lnorm")
+fit_weibull_i <- fitdist(inter_arrivals, distr="weibull")
+fit_gamma_i <- fitdist(inter_arrivals, distr="gamma")
+
+# calculating metrics of fit
+gofstat(list(fit_exp_i, fit_lognorm_i, fit_weibull_i, fit_gamma_i))
+
+```
+
+```{r}
+#| echo: false
+#| label: fig-charts-inter
+#| fig-cap: "Plots for Distribution Fitting of Inter-Arrival Times"
+#| lightbox: true
+
+# plots of distribution fitting
+par(mfrow = c(1,2))
+plot.legend <- c("Exponential","Lognormal", "Weibull", "Gamma")
+denscomp(list(fit_exp_i, fit_lognorm_i, fit_weibull_i, fit_gamma_i), legendtext = plot.legend)
+qqcomp(list(fit_exp_i, fit_lognorm_i, fit_weibull_i, fit_gamma_i), legendtext = plot.legend)
+```
+
+**SERVICE TIMES:**
+
+```{r}
+#| code-fold: true
+
+service_times <- na.omit(appointments_clean$appointment_duration)
+service_times <- service_times[service_times > 0]
+
+# fitting possible distributions
+fit_exp_s <- fitdist(service_times, distr="exp")
+fit_lognorm_s <- fitdist(service_times, distr="lnorm")
+fit_weibull_s <- fitdist(service_times, distr="weibull")
+fit_gamma_s <- fitdist(service_times, distr="gamma")
+
+# compare distributions
+gofstat(list(fit_exp_s, fit_lognorm_s, fit_weibull_s, fit_gamma_s))
+
+```
+
+```{r}
+#| echo: false
+#| label: fig-charts-serv
+#| fig-cap: "Plots for Distribution Fitting of Service Times"
+#| lightbox: true
+
+# plots of distribution fitting
+par(mfrow = c(1,2))
+plot.legend <- c("Exponential","Lognormal", "Weibull", "Gamma")
+denscomp(list(fit_exp_s, fit_lognorm_s, fit_weibull_s, fit_gamma_s), legendtext = plot.legend)
+qqcomp(list(fit_exp_s, fit_lognorm_s, fit_weibull_s, fit_gamma_s), legendtext = plot.legend)
+```
+
+The **Weibull** **distribution** provided the best fit for both the inter-arrival times and service times based on both statistical and graphical methods. Based on both goodness-of-fit statistics and the information criteria (AIC and BIC), the Weibull distribution provided the best fit for inter-arrival times by achieving the lowest values across all metrics. This result was further supported by the density and Q-Q plots, which showed a strong correlation between the empirical data and the fitted Weibull distribution, indicating a better overall fit compared to the Exponential, Log-Normal, and Gamma distributions. 
+
+In the Histograms of both @fig-charts-inter and @fig-charts-serv, Weibull curve closely followed the empirical distribution across both the central region and the right tail, whereas the Exponential distribution underestimated the tail behaviour and the Log-Normal and Gamma distributions showed less consistent alignment.
+
+The Q-Q plots of @fig-charts-inter and @fig-charts-serv further supported this conclusion, with the Weibull model showing near-linear alignment across most quantiles and only minor deviations in the upper tail, while the Log-Normal model exhibited clear curvature indicating unalignment. The Exponential and Gamma models showed moderate alignment but with a greater spread from the reference line as opposed to the Weibull model.
+
+As such, we can define the final distributions of inter-arrival times and service times respectively:
+
+$$T_a \sim Weibull(\beta = 1.34, \alpha = 19.62):\
+T_a\ = inter-arrival\ times$$
+
+$$T_s \sim Weibull(\beta = 1.58, \alpha = 19.42)
+:\ T_s\ = service\ times$$
+
+Although the Weibull distribution provided the best statistical fit according to goodness-of-fit measures, this doesn’t necessarily make the most accurate representation of system behaviour. The simulation results suggest that a good statistical distribution fit does not guarantee realistic queue dynamics, particularly when there is a lot of variability in arrival and service times in regard to congestion formation. In this case, empirical sampling better preserves the underlying variability of the system, leading to more realistic waiting time behaviour. Empirical sampling draws straight from the dataset, rather than relying on a fitted distribution, likely reflecting the true variability of the observed data more closely.
+
+### Simulation
+
+**G/G/1**
+
+Once settling on the distributions of inter-arrival times and service times, the G/G/1 queue can be implemented, which has been adapted from 'Stochastic Modelling' (Sam Wiwatanapataphee, 2026)
+
+The G/G/1 algorithm keeps track of arrival, departure and waiting times and simulates the hospital queue by:
+
+1.  Initialising the first arrival
+
+2.  Generating new arrivals until the number of patients to be simulated is reached
+
+3.  Skipping patients that are ‘no-shows’
+
+4.  Drawing inter-arrival and appointment duration times from the Weibull distribution
+
+5.  Updating the server/doctor’s state, where patients can immediately be served if the doctor is idle or join the queue if not.
+
+When simulating the resulting queue for 10000 consecutive patients, the following mean and maximum waiting times can be calculated when sampling from the Weibull distribution for both inter-arrival and appointment duration times.
+
+```{r}
+# G/G/1 Queue Simulation - Weibull
+
+# Weibull parameters for inter-arrival times and service times 
+shape_inter <- fit_weibull_i$estimate["shape"]
+scale_inter <- fit_weibull_i$estimate["scale"]
+
+
+shape_service <- fit_weibull_s$estimate["shape"]
+scale_service <- fit_weibull_s$estimate["scale"]
+
+
+set.seed(123)
+
+# number of patients to simulate
+sim_patients <- 10000
+
+# no-show generation
+attends <- rbinom(sim_patients, 1, 1 - no_show_rate)
+
+# system variables
+X <- 0    # number of patients in the system
+T <- 0    # time
+
+arrival_times <- c()
+departure_times <- c()
+waiting_times <- c()
+
+time_vec <- c(0)
+state_vec <- c(0)
+event_vec <- c("Start")
+
+# first arrival
+T_a <- rweibull(
+  1,
+  shape = shape_inter,
+  scale = scale_inter
+)
+
+# no service initially until first patient arrives
+T_s <- Inf
+
+queue_arrivals <- c()
+
+patient <- 0
+
+# running loop until target patients reached
+while (patient < sim_patients) {
+
+  # arrival event occurs
+  if (T_a < T_s) {
+
+    T <- T_a
+
+    patient <- patient + 1
+
+    # next arrival
+    T_a <- T + rweibull(
+      1,
+      shape = shape_inter,
+      scale = scale_inter
+    )
+
+    # skip no-shows
+    if (attends[patient] == 0) {
+      next
+    }
+
+    # doctor is now seeing patient + logging arrival time
+    X <- X + 1
+
+    arrival_times <- c(arrival_times, T)
+
+    event_vec <- c(event_vec, "Arrival")
+    time_vec <- c(time_vec, T)
+    state_vec <- c(state_vec, X)
+
+    # if the server idle, patient is immediately seen 
+    if (X == 1) {
+
+      waiting_times <- c(waiting_times, 0)
+      
+      # generate appointment duration
+      service_time <- rweibull(
+        1,
+        shape = shape_service,
+        scale = scale_service
+      )
+
+      T_s <- T + service_time
+
+    } else {
+
+      queue_arrivals <- c(queue_arrivals, T)
+      # the doctor is busy, so patient must join the queue
+
+    }
+
+  } else {
+
+    # patient is leaving + logging departure event
+    T <- T_s
+
+    X <- X - 1
+
+    departure_times <- c(departure_times, T)
+
+    event_vec <- c(event_vec, "Departure")
+    time_vec <- c(time_vec, T)
+    state_vec <- c(state_vec, X)
+
+    # queue not empty
+    if (X > 0) {
+
+      next_customer <- queue_arrivals[1]
+
+      wait <- T - next_customer
+
+      waiting_times <- c(waiting_times, wait)
+
+      queue_arrivals <- queue_arrivals[-1]
+
+      service_time <- rweibull(
+        1,
+        shape = shape_service,
+        scale = scale_service
+      )
+
+      T_s <- T + service_time
+
+    } else {
+
+      T_s <- Inf
+
+    }
+  }
+}
+
+# returning data frame of time, state of system and event. 
+events_df <- data.frame(
+  time = time_vec,
+  state = state_vec,
+  event = event_vec
+)
+
+```
+
+```{r}
+#| echo: false
+#| label: fig-plot-wei
+#| fig-cap: "Sample 1-day plotting path for Weibull G/G/1 queue"
+#| lightbox: true
+
+# sample path plot
+
+plot(
+  events_df$time[1:35],
+  events_df$state[1:35],
+  type = "s",
+  xlab = "Time in minutes",
+  ylab = "Number of patients in system",
+  main = "Weibull Distribution based G/G/1 Sample Path",
+  ylim = c(0, max(events_df$state[1:35]) + 1)
+)
+
+points(
+  events_df$time,
+  events_df$state,
+  pch = 16,
+  col = ifelse(events_df$event == "Arrival",
+               "plum",
+               ifelse(events_df$event == "Departure",
+                      "aquamarine3",
+                      "black"))
+)
+
+legend(
+  "topleft",
+  legend = c("Arrival", "Departure"),
+  pch = 16,
+  col = c("plum", "aquamarine3"),
+  bty = "n"
+)
+```
+
+@fig-plot-wei shows the number of patients in the G/G/1 queue over time using inter-arrival and service times generated from the fitted Weibull distributions. The stepwise structure indicates that the system operates through discrete arrival times departure events, where upward movements correspond to arrivals and downward movements correspond to departures.
+
+The system is predominantly in a low-congestion state, with most of the observations between 0 and 2 patients, and only occasional short periods where the queue increases from 3 to 4 patients. This indicates that while transient congestion occurs, the system remains stable without sustained queue growth.
+
+The short periods of increased queue length, particularly around 100 to 160 minutes, arise when arrivals occur in quick succession relative to service completions, reflecting inherent variability in the arrival and service processes. These bursts are followed by periods where departures exceed arrivals, allowing the system to return to an empty or near-empty state.
+
+The repeated return to zero patients suggests that the server idle at that time, indicating that the demand is below the full capacity. Overall, the sample path highlights the stochastic and time-varying nature of congestion in queueing systems driven by variability in arrivals and service times.
+
+```{r}
+#| label: "tbl-gg1-wei-wait"
+#| tbl-cap: "Comparison of Mean and Maximum waiting times of Actual System vs Weibull-based Queue Simulation"
+#| tbl-cap-location: bottom
+#| echo: false
+library (knitr)
+
+# actual mean and max waiting times
+mean_wait <- mean(waiting_times)
+max_wait <- max(waiting_times)
+
+# simulated mean and max waiting times 
+emp_wait_mean <- mean(appointments_clean$waiting_time)
+emp_wait_max <- max(appointments_clean$waiting_time)
+
+weibull_stats <- data.frame(Metrics = c("Mean Wait", "Max Wait"),
+                            Theoretical = c(emp_wait_mean, emp_wait_max),
+                            Simulation = c(mean_wait, max_wait))
+
+kable(weibull_stats,
+      caption = "Actual vs Weibull Queue Simulated Mean and Maximum Waiting times")
+
+```
+
+The large discrepancy in mean wait times of 24.75 minutes for the simulation against the empirical wait time of 44.09 minutes indicates that the Weibull distribution may not accurately reflect the variability of inter-arrival times and appointment durations. As queuing systems can be quite vulnerable to variability, sampling from the Weibull distribution may have resulted in the simulation greatly underestimating wait times. 
+
+To test the quality of the simulation, test metrics such as the utilisation ratio (rho) and other performance metrics can be calculated.
+
+```{r}
+#| code-fold: true
+#| label: "tbl-gg1-wei-met"
+#| tbl-cap: "Comparison of Additional Metrics of Actual System vs Weibull-based Queue Simulation"
+#| tbl-cap-location: bottom
+
+# Theoretical metrics using Kingsman Aprroximation:
+lambda <- 1/mean(inter_arrivals)
+mu <- 1/mean(appointment_duration)
+rho <- lambda / mu
+
+ca2 <- var(inter_arrivals) / mean(inter_arrivals)^2  
+cs2 <- var(appointment_duration) / mean(appointment_duration)^2  
+
+Wq_theory <- (rho / (mu * (1 - rho))) * ((ca2 + cs2) / 2)
+Lq_theory <- lambda * Wq_theory        
+W_theory  <- Wq_theory + 1/mu
+L_theory  <- lambda * W_theory
+P0_theory <- 1 - rho
+
+# Simulation performance metrics
+durations <- diff(events_df$time) # time spent in each interval
+
+states <- events_df$state[-nrow(events_df)]   # state held over each interval
+
+rho_hat <- sum((states > 0) * durations) / sum(durations)
+L_hat <- sum(states * durations) / sum(durations)
+Lq_hat <- L_hat - rho_hat
+W_hat <- L_hat / lambda
+Wq_hat <- W_hat - 1 / mu
+P0_hat <- sum((states == 0) * durations) / sum(durations)
+
+weibull_metrics <- data.frame(
+  Metric = c("Utilisation", "Avg. number in system", "Avg. number in queue", "Avg. response time", "Avg. waiting time", "System empty probability"),
+  Theoretical = c(rho, L_theory, Lq_theory, W_theory, Wq_theory, P0_theory),
+  Simulated = c(rho_hat, L_hat, Lq_hat, W_hat, Wq_hat, P0_hat))
+
+kable(weibull_metrics,
+      caption = "Theoretical vs Weibull Queue Simulated Metrics")
+
+```
+
+All the calculated metrics of the simulation are lower than that of theoretical metrics. The utilisation rate of 0.75 (indicating that the simulated server is efficient), underestimates the true rate of 0.97 (a high utilisation). Other metrics such as the average number of patients in the simulated system (L = \~2) and average response time (W = \~32 mins) greatly underestimate the theoretical values. Overall, the calculated metrics indicate that the queuing model built upon Weibull-distributed waiting and inter-arrival times may not be the most comprehensive simulation.
+
+To identify whether the simulation can be further improved, the inter-arrival times and appointment durations may instead be generated using the **empirical distributions** (ie. sampling randomly from the dataset).
+
+```{r}
+#| code-fold: true
+
+# G/G/1 Queue Simulation - Empirical
+
+set.seed(123)
+
+# number of patients to simulate
+sim_patients <- 10000
+
+# no-show generation
+attends <- rbinom(sim_patients, 1, 1 - no_show_rate)
+
+# system variables
+X <- 0    # number of patients in the system
+T <- 0    # time
+
+arrival_times <- c()
+departure_times <- c()
+waiting_times <- c()
+
+time_vec <- c(0)
+state_vec <- c(0)
+event_vec <- c("Start")
+
+# first arrival
+T_a <- sample(inter_arrivals, size=1, replace=TRUE)
+
+# no service initially until first patient arrives
+T_s <- Inf
+queue_arrivals <- c()
+patient <- 0
+
+# running loop until target patients reached
+while (patient < sim_patients) {
+  # arrival event occurs
+  if (T_a < T_s) {
+    T <- T_a
+    patient <- patient + 1
+
+    # next arrival
+    T_a <- T + sample(inter_arrivals, size=1, replace=TRUE)
+
+    # skip no-shows
+    if (attends[patient] == 0) {
+      next
+    }
+
+    # doctor is now seeing patient + logging arrival time
+    X <- X + 1
+    arrival_times <- c(arrival_times, T)
+    event_vec <- c(event_vec, "Arrival")
+    time_vec <- c(time_vec, T)
+    state_vec <- c(state_vec, X)
+
+    # if the server is idle, patient is immediately seen
+    if (X == 1) {
+      waiting_times <- c(waiting_times, 0)
+
+      # generate appointment duration
+      service_time <- sample(appointment_duration, size=1, replace=TRUE)
+      T_s <- T + service_time
+    } else {
+      queue_arrivals <- c(queue_arrivals, T)
+      # the doctor is busy, so patient must join the queue
+    }
+  } else {
+    # patient is leaving + logging departure event
+    T <- T_s
+    X <- X - 1
+    departure_times <- c(departure_times, T)
+    event_vec <- c(event_vec, "Departure")
+    time_vec <- c(time_vec, T)
+    state_vec <- c(state_vec, X)
+
+    # queue not empty
+    if (X > 0) {
+      next_customer <- queue_arrivals[1]
+      wait <- T - next_customer
+      waiting_times <- c(waiting_times, wait)
+      queue_arrivals <- queue_arrivals[-1]
+      service_time <- sample(appointment_duration, size=1, replace=TRUE)
+      T_s <- T + service_time
+    } else {
+      T_s <- Inf
+    }
+  }
+}
+
+# returning data frame of time, state of system and event
+events_df <- data.frame(
+  time = time_vec,
+  state = state_vec,
+  event = event_vec
+)
+
+```
+
+```{r}
+#| echo: false
+#| label: fig-plot-emp
+#| fig-cap: "Sample 1-day plotting path for Empirical G/G/1 queue"
+#| lightbox: true
+
+# sample path plot
+
+plot(
+  events_df$time[1:35],
+  events_df$state[1:35],
+  type = "s",
+  xlab = "Time in minutes",
+  ylab = "Number of patients in system",
+  main = "Empirical Distribution-based G/G/1 Sample Path",
+  ylim = c(0, max(events_df$state[1:35]) + 1)
+)
+
+points(
+  events_df$time[1:35],
+  events_df$state[1:35],
+  pch = 16,
+  col = ifelse(events_df$event == "Arrival",
+               "plum",
+               ifelse(events_df$event == "Departure",
+                      "aquamarine3",
+                      "black"))
+)
+
+legend(
+  "topleft",
+  legend = c("Arrival", "Departure"),
+  pch = 16,
+  col = c("plum", "aquamarine3"),
+  bty = "n"
+)
+```
+
+@fig-plot-emp shows the number of patients in the G/G/1 queue within the empirical distribution over time. The sample path shows that the system remains in low-congestion states for most of the simulation with patient numbers typically fluctuating between 0 and 1. There are short periods of moderate congestion that occur throughout the simulation, with the largest queue build-up appearing near the 480 to 500 minute mark where the number of patients temporarily increases to 4.
+
+Compared to @fig-plot-wei , this model demonstrates more scattered fluctuations and shorter congestion periods, suggesting that the empirically sampled inter-arrival and service times produce variable but generally stable system behaviour. The frequent returns to an empty system indicates periods of an idle server. Overall, the sample path suggests that while temporary queue accumulation does occur, sustained congestion is usually uncommon within the simulated healthcare system.
+
+As such, the G/G/1 model can be re-implemented, to now sample straight from the inter-arrival times and appointment durations of the dataset, resulting in the consequent mean and maximum wait times.
+
+```{r}
+#| echo: false
+#| label: "tbl-gg1-emp-wait"
+#| tbl-cap: "Comparison of Mean and Maximum waiting times of Actual System vs Empirical-based Queue Simulation"
+#| tbl-cap-location: bottom
+
+# actual mean and max waiting times
+mean_wait <- mean(waiting_times) 
+max_wait <- max(waiting_times)
+
+#simulated mean and max waiting times 
+emp_wait_mean <- mean(appointments_clean$waiting_time)
+emp_wait_max <- max(appointments_clean$waiting_time)
+
+emp_stats <- data.frame(Metrics = c("Mean Wait", "Max Wait"), Theoretical = c(emp_wait_mean, emp_wait_max), Simulation = c(mean_wait, max_wait))
+
+kable(emp_stats,
+      caption = "Actual vs Empirical Queue Simulated Mean and Maximum Waiting times")
+
+```
+
+While both the mean and maximum waiting times have become closer to the actual values, there still remains a discrepancy between the actual and simulation values. However, the difference in mean waiting times dropping from \~19 mins to \~13 mins, does indicate a measure of misfit with the Weibull distributions. 
+
+The remaining discrepancy may be explained by the limitations present within the G/G/1 model itself. The test metrics calculated for the simulation based on empirical distributions is as follows.
+
+```{r}
+#| echo: false
+#| label: "tbl-gg1-emp-met"
+#| tbl-cap: "Comparison of Additional Metrics of Actual System vs Empirical-based Queue Simulation"
+#| tbl-cap-location: bottom
+
+# Theoretical metrics using Kingsman Aprroximation:
+lambda <- 1/mean(inter_arrivals)
+mu <- 1/mean(appointment_duration)
+rho <- lambda / mu
+
+ca2 <- var(inter_arrivals) / mean(inter_arrivals)^2  
+cs2 <- var(appointment_duration) / mean(appointment_duration)^2  
+
+Wq_theory <- (rho / (mu * (1 - rho))) * ((ca2 + cs2) / 2)
+Lq_theory <- lambda * Wq_theory        
+W_theory  <- Wq_theory + 1/mu
+L_theory  <- lambda * W_theory
+P0_theory <- 1 - rho
+
+# Empirical performance metrics
+
+# durations spent in each state
+durations <- diff(events_df$time) # time spent in each interval
+
+states <- events_df$state[-nrow(events_df)]   # state held over each interval
+
+rho_hat <- sum((states > 0) * durations) / sum(durations)
+L_hat <- sum(states * durations) / sum(durations)
+Lq_hat <- L_hat - rho_hat
+W_hat <- L_hat / lambda
+Wq_hat <- W_hat - 1 / mu
+P0_hat <- sum((states == 0) * durations) / sum(durations)
+
+emp_metrics <- data.frame(
+  Metric = c("Utilisation", "Avg. number in system", "Avg. number in queue", "Avg. response time", "Avg. waiting time", "System empty probability"),
+     Theoretical = c(rho, L_theory, Lq_theory, W_theory, Wq_theory, P0_theory),
+  Simulated = c(rho_hat, L_hat, Lq_hat, W_hat, Wq_hat, P0_hat))
+
+kable(emp_metrics,
+      caption = "Theoretical vs Empirical Distribution Based Queue Simulated Mean and Maximum Waiting times")
+```
+
+While the metrics have become marginally closer to that of the theoretical values, there still remains significant deviation, as values such as rho (\~0.76) have remained highly similar. Despite an increase in average response time (W = 37.64 mins) and waiting times (Wq = 20.17) for the simulated, these are still substantially lower than the theoretical values.
+
+However, of the two developed queuing model, using the empirical distribution to model waiting times and inter-arrival times does appear to develop a queuing system more reflective of the dataset. 
+
+**G/G/c**
+
+To understand how the addition of multiple doctors will impact the development of the queue and subsequent waiting times, a G/G/c model can be implemented by expanding on the existing G/G/1 algorithm. It works by:
+
+1.  Initialising ‘c’ servers, with the first arrival being sampled from the chosen distribution (either Weibull or Empirical) for inter-arrival times.
+
+2.  For each iteration, the next arrival is compared to the next departure, indicating whether an arrival or departure is processed.
+
+3.  Once a patient arrives, any no-shows are skipped. If any server is free, the patient is assigned to the server with no wait, with a service time sampled and a scheduled departure time listed. If no servers are busy, the patient joins the queue. 
+
+4.  A patient in the queue is assigned to a server as soon as service is completed, with waiting time being calculated.
+
+5.  The loop continues until the target number of patients have been served. 
+
+\
+By expanding the queuing system to simulate having both 2 and 3 doctors within the hospital system to manage 10,000 patients, the waiting times respond as such.
+
+**Weibull Dependent Model:**
+
+```{r}
+# G/G/c Queue Simulation - Weibull
+
+set.seed(123)
+
+ggc_weibull <- function(c) {
+
+  # number of patients to simulate
+  sim_patients <- 10000
+
+  # no-show generation
+  attends <- rbinom(sim_patients, 1, 1 - no_show_rate)
+
+  # system variables
+  X <- 0  # number of patients in system
+  B <- 0  # number of busy doctors
+  T <- 0  # time
+
+  time_vec <- c(0)
+  state_vec <- c(0)
+  event_vec <- c("Start")
+  waiting_times <- c()
+
+  # first arrival
+  T_a <- rweibull(
+    1,
+    shape = shape_inter,
+    scale = scale_inter
+  )
+
+  # no departures initially until first patient arrives
+  departure_times <- rep(Inf, c)
+
+  queue_arrivals <- c()
+
+  patient <- 0
+  
+  # running loop until target patients reached
+  while (patient < sim_patients) {
+
+    next_departure <- min(departure_times)
+    # find soonest departure across all servers
+
+    # arrival event
+    if (T_a < next_departure) {
+
+      T <- T_a
+
+      patient <- patient + 1
+
+      # next arrival
+      T_a <- T + rweibull(
+        1,
+        shape = shape_inter,
+        scale = scale_inter
+      )
+
+      # skip no-shows
+      if (attends[patient] == 0) {
+        next
+      }
+      
+      # log arrival event
+      X <- X + 1
+
+      event_vec <- c(event_vec, "Arrival")
+      time_vec <- c(time_vec, T)
+      state_vec <- c(state_vec, X)
+
+      # free server available so patient is seen immediately 
+      if (B < c) {
+
+        B <- B + 1
+        waiting_times <- c(waiting_times, 0)
+        # assigning patient to first available server
+        free_server <- which(is.infinite(departure_times))[1]
+        
+        #generate appointment duration
+        service_time <- rweibull(
+          1,
+          shape = shape_service,
+          scale = scale_service
+        )
+
+        departure_times[free_server] <- T + service_time
+
+      } else {
+        
+        #if all servers are busy, patient joins the queue
+        queue_arrivals <- c(queue_arrivals, T)
+
+      }
+
+    } else {
+
+      # patient leaves
+      T <- next_departure
+
+      server <- which.min(departure_times)
+
+      X <- X - 1
+      B <- B - 1
+
+      event_vec <- c(event_vec, "Departure")
+      time_vec <- c(time_vec, T)
+      state_vec <- c(state_vec, X)
+
+      # queue not empty, so patient assigned to freed server
+      if (length(queue_arrivals) > 0) {
+
+        next_customer <- queue_arrivals[1]
+
+        wait <- T - next_customer
+
+        waiting_times <- c(waiting_times, wait)
+
+        queue_arrivals <- queue_arrivals[-1]
+
+        B <- B + 1
+
+        service_time <- rweibull(
+          1,
+          shape = shape_service,
+          scale = scale_service
+        )
+
+        departure_times[server] <- T + service_time
+
+      } else {
+
+        # queue empty so the server becomes idle.
+        departure_times[server] <- Inf
+
+      }
+    }
+  }
+  
+  # return simulation results
+  return (list(
+    waits = waiting_times,
+    events = event_vec,
+    states = state_vec,
+    time = time_vec
+  ))
+}
+```
+
+**Weibull Dependent Model Graphs:**
+
+```{r}
+#| code-fold: true
+#| layout-ncol: 2
+#| label: fig-wei-ggc
+#| fig-cap: "Bar graphs for mean and maximum waiting times of Weibull G/G/c queues"
+#| fig-subcap: 
+#|   - "Mean Waiting Time"
+#|   - "Maximum Waiting Time"
+#| lightbox: true
+
+# simulate for 1 server
+gg1_w <- ggc_weibull(1)
+mean_wait_w1 <- mean(gg1_w$waits)
+max_wait_w1 <- max(gg1_w$waits)
+
+# simulate for 2 servers
+gg2_w <- ggc_weibull(2)
+mean_wait_w2 <- mean(gg2_w$waits)
+max_wait_w2 <- max(gg2_w$waits)
+
+# simulate for 3 servers
+gg3 <- ggc_weibull(3)
+mean_wait_w3 <- mean(gg3$waits)
+max_wait_w3 <- max(gg3$waits)
+
+# return mean and max waiting times
+weibull_waitmean <- data.frame(
+  model = c("G/G/1","G/G/2","G/G/3"),
+  mean_wait = c(mean_wait_w1,mean_wait_w2,mean_wait_w3)
+)
+
+weibull_waitmax <- data.frame(
+  model = c("G/G/1","G/G/2","G/G/3"),
+  max_wait = c(max_wait_w1,max_wait_w2,max_wait_w3)
+)
+
+
+library(ggplot2)
+
+par(mfrow = c(1,2))
+ggplot(weibull_waitmean, aes(x = model, y = mean_wait)) +
+  geom_col(fill = "#2C7BB6") +
+  geom_hline(yintercept = 30, linetype = "dashed", color = "red") +
+  labs(
+    title = "Mean Waiting Time vs Number of Doctors",
+    subtitle = "Weibull Distribution Based G/G/c Queue\nRed line = 30-minute target",
+    x = "Number of Doctors",
+    y = "Mean Waiting Time (minutes)"
+  ) +
+  theme_minimal()
+
+ggplot(weibull_waitmax, aes(x = model, y = max_wait)) +
+  geom_col(fill = "#2C7BB6") +
+  labs(
+    title = "Maximum Waiting Time vs Number of Doctors",
+    subtitle = "Weibull Distribution Based G/G/c Queue",
+    x = "Number of Doctors",
+    y = "Maximum Waiting Time (minutes)"
+  ) +
+  theme_minimal()
+
+
+```
+
+**Empirical Dependent G/G/C Model:**
+
+```{r}
+
+# G/G/c Queue Simulation - Empirical Distribution 
+
+set.seed(123)
+
+emp_ggc_model <- function(c) {
+  
+  # number of patients to simulate 
+  sim_patients <- 10000
+
+  # no-show generation
+  attends <- rbinom(sim_patients, 1, 1 - no_show_rate)
+
+  # system variables
+  X <- 0  # number of patients in system
+  B <- 0  # number of busy doctors
+  T <- 0  # time
+
+  time_vec <- c(0)
+  state_vec <- c(0)
+  event_vec <- c("Start")
+
+  waiting_times <- c()
+
+  # first arrival
+  T_a <- sample(inter_arrivals, size=1, replace=TRUE)
+
+  # no departures initially until first patient arrives
+  departure_times <- rep(Inf, c)
+
+  queue_arrivals <- c()
+
+  patient <- 0
+
+  #running loop until target patients reached
+  while (patient < sim_patients) {
+
+    next_departure <- min(departure_times)
+    #find soonest departure across all doctors
+    
+  # arrival event
+    if (T_a < next_departure) {
+
+      T <- T_a
+
+      patient <- patient + 1
+
+      # next arrival
+      T_a <- T + sample(inter_arrivals, size=1, replace=TRUE)
+
+      # skip no-shows
+      if (attends[patient] == 0) {
+        next
+      }
+
+      X <- X + 1
+
+      # log arrival event
+      event_vec <- c(event_vec, "Arrival")
+      time_vec <- c(time_vec, T)
+      state_vec <- c(state_vec, X)
+
+    # free server available so patient is seen immediately
+      if (B < c) {
+
+        B <- B + 1
+
+        waiting_times <- c(waiting_times, 0)
+
+        # assign patient to first available server
+        free_server <- which(is.infinite(departure_times))[1]
+
+        # generate appointment duration
+        service_time <- sample(appointment_duration, size=1, replace=TRUE)
+
+        departure_times[free_server] <- T + service_time
+
+      } else {
+
+        # if all servers are busy, patient joins the queue 
+        queue_arrivals <- c(queue_arrivals, T)
+
+      }
+
+    } else {
+
+      # patient leaves
+      T <- next_departure
+
+      server <- which.min(departure_times)
+
+      X <- X - 1
+      B <- B - 1
+
+      event_vec <- c(event_vec, "Departure")
+      time_vec <- c(time_vec, T)
+      state_vec <- c(state_vec, X)
+
+      # queue not empty, so patient assigned to freed server
+      if (length(queue_arrivals) > 0) {
+
+        next_customer <- queue_arrivals[1]
+
+        wait <- T - next_customer
+
+        waiting_times <- c(waiting_times, wait)
+
+        queue_arrivals <- queue_arrivals[-1]
+
+        B <- B + 1
+
+        service_time <- sample(appointment_duration, size=1, replace=TRUE)
+
+        departure_times[server] <- T + service_time
+
+      } else {
+
+        # queue empty so server becomes idle
+        departure_times[server] <- Inf
+
+      }
+    }
+  }
+  # return simulation results
+  return (list(waits = waiting_times,
+               events = event_vec,
+               times = time_vec,
+               states = state_vec))
+}
+```
+
+```{r}
+#| echo: false
+#| label: fig-emp-ggc
+#| fig-cap: "Bar graphs for mean and maximum waiting times of Weibull G/G/c queues"
+#| fig-subcap: 
+#|   - "Mean Waiting Time"
+#|   - "Maximum Waiting Time"
+#| lightbox: true
+#| layout-ncol: 2
+
+# simulation for 1 Server
+gg1_e <- emp_ggc_model(1)
+mean_wait_e1 <- mean(gg1_e$waits)
+max_wait_e1 <- max(gg1_e$waits)
+
+# simulation for 2 Servers
+gg2_e <- emp_ggc_model(2)
+mean_wait_e2 <- mean(gg2_e$waits)
+max_wait_e2 <- max(gg2_e$waits)
+
+# simulation for 3 Servers
+gg3_e <- emp_ggc_model(3)
+mean_wait_e3 <- mean(gg3_e$waits)
+max_wait_e3 <- max(gg3_e$waits)
+
+# returned mean and max waiting times 
+empirical_waitmean <- data.frame(
+  model = c("G/G/1","G/G/2","G/G/3"),
+  mean_wait = c(mean_wait_e1,mean_wait_e2,mean_wait_e3)
+)
+
+empirical_waitmax <- data.frame(
+  model = c("G/G/1","G/G/2","G/G/3"),
+  max_wait = c(max_wait_e1,max_wait_e2,max_wait_e3)
+)
+
+library(ggplot2)
+
+par(mfrow = c(1,2))
+ggplot(empirical_waitmean, aes(x = model, y = mean_wait)) +
+  geom_col(fill = "#2C7BB6") +
+  geom_hline(yintercept = 30, linetype = "dashed", color = "red") +
+  labs(
+    title = "Mean Waiting Time vs Number of Doctors",
+    subtitle = "Empirical Distribution Based G/G/c Queue\nRed line = 30-minute target",
+    x = "Number of Doctors",
+    y = "Mean Waiting Time (minutes)"
+  ) +
+  theme_minimal()
+
+ggplot(empirical_waitmax, aes(x = model, y = max_wait)) +
+  geom_col(fill = "#2C7BB6") +
+  labs(
+    title = "Maximum Waiting Time vs Number of Doctors",
+    subtitle = "Empirical Distribution Based G/G/c Queue",
+    x = "Number of Doctors",
+    y = "Maximum Waiting Time (minutes)"
+  ) +
+  theme_minimal()
+
+```
+
+Increasing the number of servers from 1 to 2 causes an immediate and drastic decrease in waiting times for both simulation models. Interestingly, the resulting mean waiting time for 2 servers is fairly similar, with 0.97 units for the Weibull dependent model (@fig-wei-ggc) and 1.04 units for the Empirical dependent model (@fig-emp-ggc). However, when incrementing from 2 to 3 servers, the waiting time decrease by an order of magnitude with a \~0.84 min decrease for the Weibull dependent model and a \~0.97 unit decrease for the Empirical dependent model. The maximum waiting time also drops to just 17 minutes in the Empirical simulation. These results indicate that waiting times converge with added servers for both the developed models, showing less sensitivity to the chosen distributions. 
+
+The observed reduction in the waiting times is non-linear, with the largest improvement occurring when increasing from one to two doctors. This occurs because the system transitions from a highly congested state to a more stable system. Once additional servers are introduced, the system becomes progressively less sensitive to the fluctuations in arrival and service processes, leading to an extreme improvement in waiting time reduction.
+
+Employing 1 additional doctor would be enough to drastically reduce waiting times within the queuing system. However, more than 3 doctors working within the hospital would instead lead to unproductivity due to lack of constant patient in-flow. 
+
+### Interpretation of Findings
+
+Across all of the simulation experiments, there were several consistent patterns regarding the performance of the healthcare queueing system. 
+
+Firstly, both of the modelling approaches (Weibull and empirical sampling) produced similar qualitative behaviour, but they varied in their ability to replicate observed waiting times. Based on the metrics calculated in @tbl-gg1-emp-met, the Empirical Distribution approach consistently produces results closer to the observed dataset, suggesting that it could preserve the original variability in the data is more important for accurately representing queue dynamics than fitting a smooth theoretical distribution.
+
+Secondly, the system is highly sensitive to changes in staffing levels. Moving from a single doctor (G/G/1) to two doctors (G/G/2) produces the largest reduction in waiting times, indicating a strong non-linear improvement in system performance. However, further increases beyond three doctors yield diminishing returns, suggesting the system becomes under-utilised at higher service capacities.
+
+Overall, the results indicate that clinic performance is heavily influenced by service capacity and variability in arrivals rather than the choice of fitted distribution alone. This highlights the importance of modelling both stochastic variability and staffing structure when evaluating healthcare systems.
+
+## Conclusion
+
+### Discussion of results
+
+This project successfully developed G/G/1 and G/G/c queueing simulation models to analyse the performance of a healthcare appointment system. The simulation incorporated stochastic patient arrivals, variable appointment durations, and patient no-show behaviour to better reflect real clinical operations.
+
+The results demonstrated that increasing the number of doctors significantly reduced patient waiting times and queue congestion. The G/G/1 model produced the highest waiting times due to all patients being served by a single doctor, whereas the G/G/2 and G/G/3 models showed progressive reductions in the average waiting times, maximum waiting times, and queue length. This indicated that staffing level have 
+
+There were two approaches used to model the inter-arrival and service times: empirical sampling from the observed dataset, and fitted Weibull distributions. Although the Weibull distributions provided a statistically reasonable fit to the observed data, the empirical distribution approach produced simulation outputs that more closely resembled the real waiting time behaviour in the original dataset. The Weibull simulation was found to generate less realistic waiting time patterns and queue behaviour because the theoretical distribution couldn’t fully represent the variability and structure that was present in the real appointment data. On the other hand, the empirical sampling preserved the characteristics found in the dataset, and this resulted in more accurate and realistic simulation outcomes.
+
+### Strengths and limitations
+
+One major strength of this project is the use of a simulation-based queueing approach rather than solely relying on theoretical queueing formulas. This allowed the model to incorporate realistic healthcare system behaviours such as the variable appointment durations, irregular patient arrivals and patient no-shows. The use of both G/G/1 and G/G/c models also aided with the comparison of staffing scenarios and their effect on clinic performance.
+
+Another strength is the use of real healthcare appointment data to estimate model inputs. Through the fitting of probability distributions and comparing them against the empirical sampling approaches, the project was able to evaluate different modelling techniques and assess their realism.
+
+One limitation of the model is its simplified representation of a real healthcare system. Since the dataset used was synthetically generated, it may not perfectly represent the complexity of a real healthcare clinic. The model also assumes that all doctors have the same efficiency in terms of service and that patients are served using a ‘first-come first-serve’ approach. Overall the model does not take into account different nuances including priority patients, emergency interruptions and varying efficiencies of doctors and healthcare staff.
+
+The model also assumes an unlimited queue capacity and does not take account for patient behaviours such as late arrivals, rescheduling, cancellations, or patients leaving the queue before their appointment. These assumptions may reduce the realism of the simulation when compared to real-world healthcare environments.
+
+### Possible extensions (future work)
+
+Several extensions could improve the realism and relevance of the model. Future work could incorporate time-dependent arrival rates to model peak clinic periods more accurately, such as increased demand in peak hours including mornings or evenings. The model could also work to include patient behaviours such as late arrivals, rescheduling, cancellations, or priority-based triage systems.
+
+The model could be further extended by introducing doctors with different services or specialities, allowing the simulation to better represent a real hospital environment. Future studies could also be done to compare additional probability distributions or hybrid approaches to combine both empirical and theoretical methods.
+
+Another possible extension could be to investigate appointment scheduling optimisation by testing different booking strategies and their impact on queue congestion and patient waiting times.
+
+### Practical implications
+
+The findings of this project demonstrate the usefulness of queueing simulation for healthcare planning and resource allocation. The results show that increasing the number of available doctors can substantially reduce patient waiting times and improve overall system performance.
+
+The project also highlights the importance of selecting appropriate modelling techniques when developing healthcare simulations. Although theoretical probability distributions are mathematically convenient, empirical approaches may provide more realistic representations of healthcare systems when there is a sufficient amount of data available.
+
+Overall, this simulation framework could assist healthcare administrators in evaluating staffing decisions, reducing patient congestion, improving appointment scheduling systems, and increasing the operational efficiency within clinics and hospitals.
+
+## Contributions
+
+**Harshitha Bhupathiraju:** Writing, Methodology, Modelling
+
+**Kesia James**: Data Analysis, Writing, Modelling
+
+**Rithika Suresh Kumar:** Writing, Modelling
+
+## References
+
+Alrasheedi, K. F., AL-Mohaithef, M., Edrees, H. H., & Chandramohan, S. (2019). The Association Between Wait Times and Patient Satisfaction: Findings From Primary Health Centers in the Kingdom of Saudi Arabia. *Health Services Research and Managerial Epidemiology*, 6(1), 233339281986124. <https://doi.org/10.1177/2333392819861246>
+
+Cameron, A. (2024) *R: How to Simulate a Queue*. Stack Overflow. <https://stackoverflow.com/questions/77734912/r-how-to-simulate-a-queue>
+
+Dantas, L. F., Fleck, J. L., Cyrino Oliveira, F. L., & Hamacher, S. (2018). No-shows in appointment scheduling – a systematic literature review. *Health Policy,* 122(4), 412–421. <https://doi.org/10.1016/j.healthpol.2018.02.002>
+
+Gupta, D., Denton, B. (2006). Appointment scheduling in health care: Challenges and opportunities. *IIE Transactions, 40*(9), 800–819. <https://doi.org/10.1080/07408170802165880>
+
+Osorio, F. O., Gomez, S. P., Esteban, D., Fernandez, R. R., Reinel Tabares-Soto, Bravo-Ortíz, M. A., & Adolfo, G. (2025). Predicting non-shows at outpatient appointments in internal medicine using machine learning models. *PeerJ Computer Science*, 11, e2762–e2762. <https://doi.org/10.7717/peerj-cs.2762>
+
+Roser, C. (2017). *The Kingman Formula – Variation, Utilization, and Lead Time.* All About Lean. <https://www.allaboutlean.com/kingman-formula/>
+
+Samel, M. (2025). *The Impact of Staff Shortage in Healthcare on Workers and Patients - Parim Workforce Software*. Parim.co. <https://www.parim.co/blog/impact-of-staff-shortage-in-healthcare>
+
+Wiwatanapataphee, S. (2026). *EV Charging Bays Simulation* \[Quarto Notebook\]. R and Python for Computer Simulation. <https://zamnolence.github.io/_book/10_4_EVbays.html>
+
+Wiwatanapataphee, S. (2026). *Markov Process* \[Quarto Notebook\]. R and Python for Computer Simulation. <https://zamnolence.github.io/_book/06_3_markov.html>
