@@ -20,7 +20,7 @@ Rithika Suresh Kumar - 22931108
 Kesia James - 20944201
 :::
 
-![](queue-info.jpg)
+![](queue-info.jpg){fig-align="center"}
 
 ## Introduction and Background
 
