@@ -11,6 +11,12 @@ project:
 ---
 
 ::: {.callout-note appearance="minimal" icon="false"}
+## Link to GitHub:
+
+<https://kesia-31.github.io/STAT2005/STAT2005_Quarto.html>
+:::
+
+::: {.callout-note appearance="minimal" icon="false"}
 **Contributers:**
 
 Harshitha Bhupathiraju - 21478222
