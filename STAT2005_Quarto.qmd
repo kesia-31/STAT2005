@@ -82,6 +82,14 @@ A G/G/1 queue is characterised by:
 To extend this to a G/G/c model, the number of servers should be $c > 1$
 :::
 
+![Visualisation of a one doctor queue](one_doctor.gif){fig-align="center"}
+
+::: {layout-ncol="2"}
+![Visualisation of two-doctor queue](two_doctors.gif){alt="Visualisation of Two-doctor queue"}
+
+![Visualisation of three-doctor queue](three_doctors.gif){alt="Visualisation of three-doctor queue"}
+:::
+
 Patient arrivals are modelled using inter-arrival times calculated from the difference between two sequential patients’ check-in times. These inter-arrival times are assumed to follow a fitted probability distribution (such as Log-Normal or Exponential).
 
 Within the model, each arrival will be calculated as:
@@ -1364,11 +1372,17 @@ Overall, this simulation framework could assist healthcare administrators in eva
 
 ## Contributions
 
-**Harshitha Bhupathiraju:** Writing, Methodology, Modelling
+**Proposal:** All
 
-**Kesia James**: Data Analysis, Writing, Modelling
+**Introduction and Background:** Rithika, Harshitha
 
-**Rithika Suresh Kumar:** Writing, Modelling
+**Methodology:** Harshitha, Kesia, Rithika
+
+**Model Implementation and Results:** Kesia, Harshitha
+
+**Conclusion:** Harshitha
+
+**Coding:** Kesia, Harshitha, Rithika
 
 ## References
 
