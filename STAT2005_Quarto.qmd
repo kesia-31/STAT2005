@@ -1396,6 +1396,8 @@ Dantas, L. F., Fleck, J. L., Cyrino Oliveira, F. L., & Hamacher, S. (2018). No-s
 
 Gupta, D., Denton, B. (2006). Appointment scheduling in health care: Challenges and opportunities. *IIE Transactions, 40*(9), 800–819. <https://doi.org/10.1080/07408170802165880>
 
+Jain, M. *Beginner's Guide to Queue Management System for Hospitals and Clinics*. Pickcel. <https://www.pickcel.com/blog/images/what-is-a-queue-management-system-for-hospitals.webp>
+
 Osorio, F. O., Gomez, S. P., Esteban, D., Fernandez, R. R., Reinel Tabares-Soto, Bravo-Ortíz, M. A., & Adolfo, G. (2025). Predicting non-shows at outpatient appointments in internal medicine using machine learning models. *PeerJ Computer Science*, 11, e2762–e2762. <https://doi.org/10.7717/peerj-cs.2762>
 
 Roser, C. (2017). *The Kingman Formula – Variation, Utilization, and Lead Time.* All About Lean. <https://www.allaboutlean.com/kingman-formula/>
